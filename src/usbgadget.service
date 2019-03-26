@@ -1,0 +1,15 @@
+# USB Multi-Gadget (Serial / Ethernet)
+[Unit]
+Description=USB Multi-Gadget
+After=systemd-modules-load.service
+Before=getty@ttyGS0.service
+ 
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/sbin/usbgadget
+ 
+[Install]
+WantedBy=sysinit.target
+
+# vim: set ft=systemd:

@@ -1,0 +1,38 @@
+#! /bin/sh -e
+# ref: https://www.kernel.org/doc/Documentation/usb/gadget_configfs.txt
+USB_GADGET_PATH=/sys/kernel/config/usb_gadget
+USB_GADGET_NAME=pwnpi
+
+# load libcomposite and USB gadget modules
+modprobe -r g_ether
+modprobe libcomposite
+
+# make new USB gadget in configs
+mkdir -p ${USB_GADGET_PATH}/${USB_GADGET_NAME}/configs/c.1
+cd ${USB_GADGET_PATH}/${USB_GADGET_NAME}
+
+# General USB property #
+echo 0x1d6b > idVendor	# Linux Foundation
+echo 0x0104 > idProduct	# Multifunction Composite Gadget
+echo 0x0100 > bcdDevice	# v1.0.0
+echo 0x0200 > bcdUSB	# USB2
+
+mkdir -p strings/0x409
+echo "deadbeef00112233"    > strings/0x409/serialnumber
+echo "RPi0w"               > strings/0x409/manufacturer
+echo "RPi0w USB Gadget"    > strings/0x409/product
+
+mkdir -p configs/c.1/strings/0x409
+echo "Config 1: ECM network" > configs/c.1/strings/0x409/configuration
+echo 250                     > configs/c.1/MaxPower
+
+# create function #
+mkdir -p functions/acm.usb0    # serial
+mkdir -p functions/ecm.usb0    # ECM ethernet
+# enable function #
+ln -s functions/acm.usb0   configs/c.1/   ## Serial Adapter ##
+ln -s functions/ecm.usb0   configs/c.1/   ## ECM Ethernet Adapter ##
+
+ 
+udevadm settle -t 20 || :
+ls /sys/class/udc/ > UDC

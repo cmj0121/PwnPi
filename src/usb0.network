@@ -1,0 +1,12 @@
+# Raspberry Pi Zero W (RPi0w) gadget
+# The ethernet over USB interface
+
+[Match]
+Name = usb0
+
+[Network]
+Description	= RPi Zero W gadget
+Address		= 172.16.4.2/16
+Gateway		= 172.16.4.1
+
+# vim: set ft=systemd:
