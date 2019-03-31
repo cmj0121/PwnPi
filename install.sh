@@ -2,11 +2,13 @@
 # Copyright (c) cmj <cmj@cmj.tw>. All right reserved.
 
 ## Global Variable ##
+HOSTNAME=PwnPi
 IMG_NAME=ArchLinuxARM-rpi-latest.tar.gz
 ARCH_LINUX_IMG=http://os.archlinuxarm.org/os/${IMG_NAME}
 LOCAL_IMG=/tmp/${IMG_NAME}
 BOOT=boot
 ROOT=root
+
 
 DEV=$1
 
@@ -68,11 +70,14 @@ sync
 mv ${ROOT}/${BOOT}/* ${BOOT}/
 
 # install the extra configuration #
+echo "${HOSTNAME}" > ${ROOT}/etc/hostname
+
 ## enable dwc2 kernel module ##
 echo "dtoverlay=dwc2" >> boot/config.txt
 sed -i "s/rootwait/rootwait modules-load=dwc2/g" boot/cmdline.txt
 
 cp -a src/usb0.network      ${ROOT}/usr/lib/systemd/network/usb0.network
+cp -a src/wlan0.network     ${ROOT}/usr/lib/systemd/network/wlan0.network
 cp -a src/usbgadget         ${ROOT}/usr/sbin/usbgadget
 cp -a src/usbgadget.service ${ROOT}/usr/lib/systemd/system/usbgadget.service 
 ## USB CDC ECM network device ##
