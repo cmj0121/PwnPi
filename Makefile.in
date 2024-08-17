@@ -1,0 +1,7 @@
+ifneq (,$(wildcard ./.env))
+	include .env
+	export
+endif
+
+HOSTNAME ?= pwnpi.local
+USERNAME ?= pi
