@@ -2,6 +2,7 @@
 package pwnpi
 
 import (
+	"context"
 	_ "embed"
 	"os"
 	"os/exec"
@@ -19,7 +20,7 @@ type Install struct {
 }
 
 // Run the install command to install the PwnPi CLI into the Raspberry Pi.
-func (i *Install) Run() error {
+func (i *Install) Run(ctx context.Context) error {
 	// save the systemd service file into the target path
 	path := "/etc/systemd/system/pwnpi.service"
 	log.Trace().Str("path", path).Msg("writing the systemd service file")

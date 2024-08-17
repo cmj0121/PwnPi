@@ -1,8 +1,10 @@
 package pwnpi
 
 import (
+	"context"
 	"fmt"
 	"os"
+	"os/signal"
 
 	"github.com/alecthomas/kong"
 	"github.com/rs/zerolog"
@@ -56,20 +58,37 @@ func (p *PwnPi) Run(cmd string) error {
 	p.prologue()
 	defer p.epilogue()
 
-	return p.run(cmd)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	sig := make(chan os.Signal, 1)
+	signal.Notify(sig, os.Interrupt)
+	go func() {
+		defer signal.Stop(sig)
+		defer close(sig)
+
+		select {
+		case <-sig:
+			log.Warn().Msg("Ctrl+C pressed, exiting ...")
+			cancel()
+		case <-ctx.Done():
+		}
+	}()
+
+	return p.run(ctx, cmd)
 }
 
-func (p *PwnPi) run(cmd string) error {
+func (p *PwnPi) run(ctx context.Context, cmd string) error {
 	log.Info().Str("command", cmd).Msg("starting run pwnpi ...")
 	defer log.Info().Msg("finished run pwnpi ...")
 
 	switch cmd {
 	case "pwn":
 		log.Info().Msg("running pwn command ...")
-		return p.Pwn.Run()
+		return p.Pwn.Run(ctx)
 	case "install":
 		log.Info().Msg("running install command ...")
-		return p.Install.Run()
+		return p.Install.Run(ctx)
 	}
 
 	return nil
