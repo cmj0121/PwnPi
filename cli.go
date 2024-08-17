@@ -18,7 +18,6 @@ const (
 	PATCH = 0
 )
 
-
 // The PwnPi instance that control the PwnPi CLI and how it behaves.
 type PwnPi struct {
 	// general options
@@ -26,6 +25,10 @@ type PwnPi struct {
 
 	// logging options
 	Verbose int `short:"v" name:"verbose" type:"counter" help:"Show the verbose output."`
+
+	// The command that the PwnPi CLI can execute
+	Install *Install `cmd:"" help:"Install the PwnPi CLI into the Raspberry Pi."`
+	Pwn     *Pwn     `cmd:"" help:"Run the PwnPi CLI."`
 }
 
 // Create a new PwnPi instance with default configuration
@@ -34,7 +37,7 @@ func New() *PwnPi {
 }
 
 // Parse the command line arguments and run the PwnPi CLI
-func (p *PwnPi) ParseAndRun() int {
+func (p *PwnPi) ParseAndRun() {
 	opts := []kong.Option{
 		kong.Name("pwnpi"),
 		kong.Description("The PwnPi CLI for Raspberry Pi."),
@@ -44,27 +47,30 @@ func (p *PwnPi) ParseAndRun() int {
 		},
 	}
 
-	kong.Parse(p, opts...)
-	switch err := p.Run(); err {
-	case nil:
-		return 0
-	default:
-		log.Error().Err(err).Msg("failed to run the PwnPi CLI")
-		return 1
-	}
+	ctx := kong.Parse(p, opts...)
+	ctx.FatalIfErrorf(p.Run(ctx.Command()))
 }
 
 // Run the PwnPi CLI based on the current configuration
-func (p *PwnPi) Run() error {
+func (p *PwnPi) Run(cmd string) error {
 	p.prologue()
 	defer p.epilogue()
 
-	return p.run()
+	return p.run(cmd)
 }
 
-func (p *PwnPi) run() error {
-	log.Info().Msg("starting run pwnpi ...")
+func (p *PwnPi) run(cmd string) error {
+	log.Info().Str("command", cmd).Msg("starting run pwnpi ...")
 	defer log.Info().Msg("finished run pwnpi ...")
+
+	switch cmd {
+	case "pwn":
+		log.Info().Msg("running pwn command ...")
+		return p.Pwn.Run()
+	case "install":
+		log.Info().Msg("running install command ...")
+		return p.Install.Run()
+	}
 
 	return nil
 }

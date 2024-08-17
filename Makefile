@@ -1,5 +1,7 @@
 include Makefile.in
 
+SRC := $(shell find . -name '*.go' -type f)
+
 .PHONY: all clean test run build upgrade help
 
 all: 			# default action
@@ -12,6 +14,7 @@ clean:			# clean-up environment
 
 test:			# run test
 	go mod tidy
+	gofmt -s -w $(SRC)
 	go test -v ./...
 
 run:			# run in the local environment
@@ -39,3 +42,4 @@ prologue:		# setup everything before access your PwnPi
 install:		# sync and instal the package to your PwnPi
 	env GOOS=linux GOARCH=arm GOARM=7 go build -ldflags "-s -w" -o pwnpi cmd/pwnpi/main.go
 	rsync -az pwnpi $(USERNAME)@$(HOSTNAME):~
+	ssh $(USERNAME)@$(HOSTNAME) "sudo mv ~/pwnpi /usr/local/bin/pwnpi && sudo pwnpi install -vv"
