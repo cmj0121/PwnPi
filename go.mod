@@ -5,6 +5,8 @@ go 1.22.4
 require (
 	github.com/alecthomas/kong v0.9.0
 	github.com/rs/zerolog v1.33.0
+	periph.io/x/conn/v3 v3.7.1
+	periph.io/x/host/v3 v3.8.2
 )
 
 require (
