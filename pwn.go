@@ -3,11 +3,15 @@ package pwnpi
 
 import (
 	"context"
+	"embed"
 	"errors"
 
 	"github.com/cmj0121/pwnpi/pkg/waveshare"
 	"github.com/rs/zerolog/log"
 )
+
+//go:embed assets/images
+var images embed.FS
 
 // The Pwn instance that control the PwnPi CLI and how it behaves.
 type Pwn struct {
@@ -26,7 +30,7 @@ func (p *Pwn) Run(ctx context.Context) (err error) {
 }
 
 func (p *Pwn) prologue() error {
-	display, err := waveshare.New()
+	display, err := waveshare.New(images)
 	if err != nil {
 		log.Warn().Err(err).Msg("failed to create the waveshare E-Ink display")
 		return err

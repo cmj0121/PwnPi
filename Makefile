@@ -41,5 +41,5 @@ prologue:		# setup everything before access your PwnPi
 
 install:		# sync and instal the package to your PwnPi
 	env GOOS=linux GOARCH=arm GOARM=7 go build -ldflags "-s -w" -o pwnpi cmd/pwnpi/main.go
-	rsync -az pwnpi $(USERNAME)@$(HOSTNAME):~
+	rsync --progress pwnpi $(USERNAME)@$(HOSTNAME):~
 	ssh $(USERNAME)@$(HOSTNAME) "sudo mv ~/pwnpi /usr/local/bin/pwnpi && sudo pwnpi install -vv"

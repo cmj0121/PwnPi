@@ -1,6 +1,7 @@
 package waveshare
 
 import (
+	"embed"
 	"errors"
 	"fmt"
 
@@ -68,9 +69,11 @@ func (c Command) String() string {
 type WaveShare struct {
 	*SPI
 	*GPIO
+
+	images embed.FS
 }
 
-func New() (*WaveShare, error) {
+func New(images embed.FS) (*WaveShare, error) {
 	_, err := host.Init()
 	if err != nil {
 		log.Warn().Err(err).Msg("failed to initialize the host")
@@ -93,6 +96,8 @@ func New() (*WaveShare, error) {
 	wave := &WaveShare{
 		SPI:  spi,
 		GPIO: gpio,
+
+		images: images,
 	}
 
 	return wave, nil
@@ -126,7 +131,7 @@ func (w *WaveShare) Initialize() (err error) {
 	w.GPIO.WaitToIdle()
 
 	err = errors.Join(err, w.eraseDisplay(false))
-	err = errors.Join(err, w.initDisplay())
+	err = errors.Join(err, w.showImage(IMG_RPI_ICON, 8))
 
 	log.Info().Err(err).Msg("successfully initialized the WaveShare E-Ink display")
 	return
@@ -146,66 +151,11 @@ func (w *WaveShare) eraseDisplay(fast bool) (err error) {
 	for i := 1; i < len(pixels); i *= 2 {
 		copy(pixels[i:], pixels[:i])
 	}
-	return w.showImage(fast, pixels...)
-}
-
-// Initialize the WaveShare E-Ink display with the test pattern.
-func (w *WaveShare) initDisplay() (err error) {
-	log.Info().Msg("initializing the WaveShare E-Ink display")
-
-	width, height := TP2in13_WIDTH, TP2in13_HEIGHT
-	wire := (width + 7) / 8
-
-	// generate the test image
-	pixels := make([]byte, wire*height)
-	ratio := float64(width) / float64(height)
-	for y := 0; y < TP2in13_HEIGHT; y++ {
-		byteIdx, bitIdx := 0, 7
-
-		for x := 0; x < TP2in13_WIDTH; x++ {
-			var bit byte
-
-			r := float64(x) / float64(y)
-			rr := float64(TP2in13_WIDTH-x) / float64(y)
-			switch {
-			case r <= ratio && x < TP2in13_WIDTH/2 && y < TP2in13_HEIGHT/2:
-				bit = 0
-			case r >= ratio && x > TP2in13_WIDTH/2 && y > TP2in13_HEIGHT/2:
-				bit = 0
-			case rr <= ratio && x < TP2in13_WIDTH/2 && y > TP2in13_HEIGHT/2:
-				bit = 0
-			case rr >= ratio && x > TP2in13_WIDTH/2 && y < TP2in13_HEIGHT/2:
-				bit = 0
-			default:
-				bit = 1
-			}
-
-			pixels[byteIdx+y*wire] |= bit << bitIdx
-			bitIdx--
-			if bitIdx < 0 {
-				byteIdx++
-				bitIdx = 7
-			}
-		}
-	}
-
-	// show the test image animation
-	for i := 0; i < 3; i++ {
-		// inverse the black and white color
-		for idx := range pixels {
-			pixels[idx] = ^pixels[idx]
-		}
-
-		err = errors.Join(err, w.showImage(true, pixels...))
-	}
-
-	// and erase the display at final
-	err = errors.Join(err, w.eraseDisplay(true))
-	return
+	return w.showPixel(fast, pixels...)
 }
 
 // Show the image per bit-plane on the WaveShare E-Ink display.
-func (w *WaveShare) showImage(fast bool, img ...byte) (err error) {
+func (w *WaveShare) showPixel(fast bool, img ...byte) (err error) {
 	err = errors.Join(err, w.sendCommand(WRITE_MEMORY_B_W, img...))
 	err = errors.Join(err, w.sendCommand(NOP))
 	err = errors.Join(err, w.refreshDisplay(fast))

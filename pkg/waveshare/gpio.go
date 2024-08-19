@@ -53,7 +53,7 @@ func (g *GPIO) WaitToIdle() {
 
 	for g.BUSY.Read() == gpio.High {
 		time.Sleep(1 * time.Millisecond)
-		log.Trace().Msg("waiting for the GPIO pins to be idle")
+		// log.Trace().Msg("waiting for the GPIO pins to be idle")
 	}
 
 	log.Debug().Msg("the GPIO pins are now idle")
