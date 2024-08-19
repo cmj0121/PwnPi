@@ -153,7 +153,18 @@ func (w *WaveShare) Initialize() (err error) {
 	time.Sleep(333 * time.Millisecond)
 	err = errors.Join(err, w.showAssets(IMG_RPI_ICON, 8))
 
+	err = errors.Join(err, w.DeepSleep())
+
 	log.Info().Err(err).Msg("successfully initialized the WaveShare E-Ink display")
+	return
+}
+
+// Set the E-Ink display to deep sleep mode.
+func (w *WaveShare) DeepSleep() (err error) {
+	err = w.sendCommand(DEEP_SLEEP_MODE)
+	w.WaitToIdle()
+
+	log.Info().Err(err).Msg("set the WaveShare E-Ink display to deep sleep mode")
 	return
 }
 
@@ -180,9 +191,9 @@ func (w *WaveShare) showPixel(fast bool, img ...byte) (err error) {
 	err = errors.Join(err, w.sendCommand(NOP))
 	err = errors.Join(err, w.refreshDisplay(fast))
 
-	log.Debug().Err(err).Msg("showing the image on the WaveShare E-Ink display")
-
 	w.GPIO.WaitToIdle()
+
+	log.Debug().Err(err).Msg("showing the image on the WaveShare E-Ink display")
 	return err
 }
 
