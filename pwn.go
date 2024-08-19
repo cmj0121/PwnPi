@@ -26,6 +26,10 @@ func (p *Pwn) Run(ctx context.Context) (err error) {
 
 	err = errors.Join(err, p.display.Initialize())
 
+	for event := range p.display.Touches(ctx) {
+		log.Info().Msgf("event: %v", event)
+	}
+
 	return
 }
 

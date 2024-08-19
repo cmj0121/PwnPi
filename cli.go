@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"time"
 
 	"github.com/alecthomas/kong"
 	"github.com/rs/zerolog"
@@ -58,7 +59,7 @@ func (p *PwnPi) Run(cmd string) error {
 	p.prologue()
 	defer p.epilogue()
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
 	sig := make(chan os.Signal, 1)

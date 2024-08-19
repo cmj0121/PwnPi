@@ -95,7 +95,7 @@ func New(fs embed.FS) (*WaveShare, error) {
 		return nil, err
 	}
 
-	i2c, err := NewI2C()
+	i2c, err := NewI2C(gpio)
 	if err != nil {
 		defer spi.Close()
 		defer gpio.Close()
@@ -144,7 +144,7 @@ func (w *WaveShare) Initialize() (err error) {
 	w.GPIO.WaitToIdle()
 
 	// initialize the I2C bus
-	err = errors.Join(err, w.I2C.Initialize(w.GPIO))
+	err = errors.Join(err, w.I2C.Initialize())
 
 	// initialize the display
 	err = errors.Join(err, w.eraseDisplay(false))
