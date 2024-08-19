@@ -1,14 +1,13 @@
-# USB Multi-Gadget (Serial / Ethernet)
+# PwnPi tool as a service
 [Unit]
-Description=USB Multi-Gadget
+Description=PwnPi tool as a service
 After=systemd-modules-load.service
-Before=getty@ttyGS0.service
- 
+
 [Service]
 Type=oneshot
 RemainAfterExit=yes
-ExecStart=/usr/sbin/usbgadget
- 
+ExecStart=/usr/local/bin/pwnpi -vv pwn
+
 [Install]
 WantedBy=sysinit.target
 
