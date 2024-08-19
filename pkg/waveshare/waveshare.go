@@ -70,6 +70,7 @@ func (c Command) String() string {
 type WaveShare struct {
 	*SPI
 	*GPIO
+	*I2C
 
 	fs embed.FS
 }
@@ -94,9 +95,19 @@ func New(fs embed.FS) (*WaveShare, error) {
 		return nil, err
 	}
 
+	i2c, err := NewI2C()
+	if err != nil {
+		defer spi.Close()
+		defer gpio.Close()
+
+		log.Warn().Err(err).Msg("failed to create the I2C bus")
+		return nil, err
+	}
+
 	wave := &WaveShare{
 		SPI:  spi,
 		GPIO: gpio,
+		I2C:  i2c,
 
 		fs: fs,
 	}
@@ -114,6 +125,7 @@ func (w *WaveShare) Close() {
 // It will send the initialization commands to the display, reset the GPIO pins, and clear
 // the display.
 func (w *WaveShare) Initialize() (err error) {
+	// initialize the SPI bus
 	err = errors.Join(err, w.GPIO.Reset())
 	w.GPIO.WaitToIdle()
 
@@ -131,6 +143,10 @@ func (w *WaveShare) Initialize() (err error) {
 	err = errors.Join(err, w.setCursor(0, 0))
 	w.GPIO.WaitToIdle()
 
+	// initialize the I2C bus
+	err = errors.Join(err, w.I2C.Initialize(w.GPIO))
+
+	// initialize the display
 	err = errors.Join(err, w.eraseDisplay(false))
 	time.Sleep(333 * time.Millisecond)
 	err = errors.Join(err, w.showText("PwnPi", 240, 120, 64))
