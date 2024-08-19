@@ -4,6 +4,7 @@ import (
 	"embed"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/rs/zerolog/log"
 	"periph.io/x/conn/v3/gpio"
@@ -70,10 +71,10 @@ type WaveShare struct {
 	*SPI
 	*GPIO
 
-	images embed.FS
+	fs embed.FS
 }
 
-func New(images embed.FS) (*WaveShare, error) {
+func New(fs embed.FS) (*WaveShare, error) {
 	_, err := host.Init()
 	if err != nil {
 		log.Warn().Err(err).Msg("failed to initialize the host")
@@ -97,7 +98,7 @@ func New(images embed.FS) (*WaveShare, error) {
 		SPI:  spi,
 		GPIO: gpio,
 
-		images: images,
+		fs: fs,
 	}
 
 	return wave, nil
@@ -131,7 +132,10 @@ func (w *WaveShare) Initialize() (err error) {
 	w.GPIO.WaitToIdle()
 
 	err = errors.Join(err, w.eraseDisplay(false))
-	err = errors.Join(err, w.showImage(IMG_RPI_ICON, 8))
+	time.Sleep(333 * time.Millisecond)
+	err = errors.Join(err, w.showText("PwnPi", 240, 120, 64))
+	time.Sleep(333 * time.Millisecond)
+	err = errors.Join(err, w.showAssets(IMG_RPI_ICON, 8))
 
 	log.Info().Err(err).Msg("successfully initialized the WaveShare E-Ink display")
 	return

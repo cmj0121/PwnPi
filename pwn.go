@@ -10,8 +10,8 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-//go:embed assets/images
-var images embed.FS
+//go:embed assets/**/*
+var fs embed.FS
 
 // The Pwn instance that control the PwnPi CLI and how it behaves.
 type Pwn struct {
@@ -30,7 +30,7 @@ func (p *Pwn) Run(ctx context.Context) (err error) {
 }
 
 func (p *Pwn) prologue() error {
-	display, err := waveshare.New(images)
+	display, err := waveshare.New(fs)
 	if err != nil {
 		log.Warn().Err(err).Msg("failed to create the waveshare E-Ink display")
 		return err
