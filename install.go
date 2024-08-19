@@ -16,7 +16,8 @@ var systemdService string
 
 // The install command is used to install the PwnPi CLI into the Raspberry Pi.
 type Install struct {
-	Prefix string `arg:"" default:"/usr/local/sbin" help:"The prefix path to install the PwnPi CLI."`
+	Prefix  string `arg:"" default:"/usr/local/sbin" help:"The prefix path to install the PwnPi CLI."`
+	Restart bool   `short:"r" help:"Restart the PwnPi service after the installation."`
 }
 
 // Run the install command to install the PwnPi CLI into the Raspberry Pi.
@@ -36,6 +37,11 @@ func (i *Install) Run(ctx context.Context) error {
 
 // Restart the PwnPi service after the installation.
 func (i *Install) restart() error {
+	if !i.Restart {
+		log.Debug().Msg("skip restarting the PwnPi service")
+		return nil
+	}
+
 	commands := [][]string{
 		{"systemctl", "daemon-reload"},
 		{"systemctl", "enable", "pwnpi"},
