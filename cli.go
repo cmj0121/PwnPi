@@ -10,6 +10,7 @@ import (
 	"github.com/alecthomas/kong"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
+	"github.com/cmj0121/pwnpi/pkg/pidfile"
 )
 
 const (
@@ -82,6 +83,10 @@ func (p *PwnPi) Run(cmd string) error {
 func (p *PwnPi) run(ctx context.Context, cmd string) error {
 	log.Info().Str("command", cmd).Msg("starting run pwnpi ...")
 	defer log.Info().Msg("finished run pwnpi ...")
+
+	lock := pidfile.New(PROJ_NAME)
+	lock.Lock()
+	defer lock.Release()
 
 	switch cmd {
 	case "pwn":

@@ -3,9 +3,9 @@ package pwnpi
 
 import (
 	"context"
-	"fmt"
 	"embed"
 	"errors"
+	"fmt"
 
 	"github.com/cmj0121/pwnpi/pkg/waveshare"
 	"github.com/rs/zerolog/log"
