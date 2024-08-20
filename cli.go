@@ -8,9 +8,9 @@ import (
 	"time"
 
 	"github.com/alecthomas/kong"
+	"github.com/cmj0121/pwnpi/pkg/pidfile"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
-	"github.com/cmj0121/pwnpi/pkg/pidfile"
 )
 
 const (

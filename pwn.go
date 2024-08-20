@@ -6,6 +6,7 @@ import (
 	"embed"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/cmj0121/pwnpi/pkg/waveshare"
 	"github.com/rs/zerolog/log"
@@ -14,10 +15,27 @@ import (
 //go:embed assets/**/*
 var fs embed.FS
 
+type Action int
+
+const (
+	IDLE Action = iota
+	SLEEP
+)
+
+const (
+	// Duration from idle to sleep mode
+	IDLE_TO_SLEEP_DURATION = 10 * time.Second
+)
+
 // The Pwn instance that control the PwnPi CLI and how it behaves.
 type Pwn struct {
+	// The flush interval of the display
+	Interval time.Duration `name:"interval" default:"10ms" help:"The flush interval of the display."`
+
 	// The waveshare E-Ink display instance
-	display *waveshare.WaveShare
+	display   *waveshare.WaveShare
+	action    Action
+	activated time.Time
 }
 
 // Run the PwnPi CLI based on the current configuration
@@ -26,12 +44,43 @@ func (p *Pwn) Run(ctx context.Context) (err error) {
 	defer p.epilogue()
 
 	err = errors.Join(err, p.display.Initialize())
+	p.action = IDLE
+	p.activated = time.Now()
 
-	for event := range p.display.Touches(ctx) {
-		log.Info().Msgf("event: %v", event)
+	return p.run(ctx)
+}
+
+func (p *Pwn) run(ctx context.Context) error {
+	ticker := time.NewTicker(p.Interval)
+
+	for {
+		select {
+		case <-ctx.Done():
+			log.Warn().Msg("context is done, stop running the PwnPi CLI")
+			return nil
+		case <-ticker.C:
+			p.handleAction()
+		}
 	}
+}
 
-	return
+func (p *Pwn) handleAction() {
+	switch p.action {
+	case SLEEP:
+		// already in sleep mode, skip the sleep mode
+	case IDLE:
+		// only refresh the IDLE screen at first 5 seconds in IDLE mode
+		if time.Since(p.activated) > IDLE_TO_SLEEP_DURATION {
+			p.action = SLEEP
+			if err := p.display.DeepSleep(); err != nil {
+				log.Warn().Err(err).Msg("failed to enter the sleep mode")
+			}
+		}
+
+		if err := p.display.ShowIdle(); err != nil {
+			log.Warn().Err(err).Msg("failed to show the idle screen")
+		}
+	}
 }
 
 func (p *Pwn) prologue() error {

@@ -133,7 +133,7 @@ func (w *WaveShare) Initialize() (err error) {
 	// initialize the display
 	err = errors.Join(err, w.showAssets(IMG_RPI_ICON, false, 8))
 	time.Sleep(333 * time.Millisecond)
-	err = errors.Join(err, w.showText("PwnPi", true, 240, 120, 64))
+	err = errors.Join(err, w.ShowIdle())
 
 	err = errors.Join(err, w.DeepSleep())
 
@@ -147,5 +147,10 @@ func (w *WaveShare) DeepSleep() (err error) {
 	w.WaitToIdle()
 
 	log.Info().Err(err).Msg("set the WaveShare E-Ink display to deep sleep mode")
+	return
+}
+
+func (w *WaveShare) ShowIdle() (err error) {
+	err = errors.Join(err, w.showText("PwnPi", true, 240, 120, 64))
 	return
 }
