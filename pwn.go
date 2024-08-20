@@ -3,6 +3,7 @@ package pwnpi
 
 import (
 	"context"
+	"fmt"
 	"embed"
 	"errors"
 
@@ -49,4 +50,7 @@ func (p *Pwn) epilogue() {
 	if p.display != nil {
 		p.display.Close()
 	}
+
+	log.Info().Msg("PwnPi CLI is terminated")
+	fmt.Println("~ Bye ~")
 }
