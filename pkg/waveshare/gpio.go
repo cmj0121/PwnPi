@@ -40,8 +40,9 @@ func (g *GPIO) Close() {
 // Reset the GPIO pin.
 func (g *GPIO) Reset() (err error) {
 	err = errors.Join(err, g.RST.Out(gpio.Low))
-	time.Sleep(20 * time.Millisecond)
+	time.Sleep(2 * time.Millisecond)
 	err = errors.Join(err, g.RST.Out(gpio.High))
+	time.Sleep(20 * time.Millisecond)
 
 	log.Debug().Err(err).Msg("reset the GPIO pin")
 	return err
