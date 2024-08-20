@@ -5,6 +5,7 @@ import (
 	"context"
 	"embed"
 	"errors"
+	"fmt"
 
 	"github.com/cmj0121/pwnpi/pkg/waveshare"
 	"github.com/rs/zerolog/log"
@@ -49,4 +50,7 @@ func (p *Pwn) epilogue() {
 	if p.display != nil {
 		p.display.Close()
 	}
+
+	log.Info().Msg("PwnPi CLI is terminated")
+	fmt.Println("~ Bye ~")
 }

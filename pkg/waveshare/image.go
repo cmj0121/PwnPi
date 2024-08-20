@@ -70,18 +70,18 @@ func (w *WaveShare) resizeImage(img image.Image, width, height, padding int) ima
 	return img
 }
 
-func (w *WaveShare) showAssets(path string, padding int) error {
+func (w *WaveShare) showAssets(path string, fast bool, padding int) error {
 	img, err := w.image(path)
 	if err != nil {
 		log.Warn().Str("path", path).Err(err).Msg("failed to get the image")
 		return err
 	}
 
-	return w.showImage(img, padding)
+	return w.showImage(img, fast, padding)
 }
 
 // Show the image on the WaveShare E-Ink display.
-func (w *WaveShare) showImage(img image.Image, padding int) error {
+func (w *WaveShare) showImage(img image.Image, fast bool, padding int) error {
 	// rotate and resize the passed image.
 	img = imaging.Rotate270(img)
 	img = w.resizeImage(img, TP2in13_WIDTH, TP2in13_HEIGHT, padding)
@@ -115,17 +115,17 @@ func (w *WaveShare) showImage(img image.Image, padding int) error {
 		}
 	}
 
-	return w.showPixel(true, pixels...)
+	return w.showPixel(fast, pixels...)
 }
 
-func (w *WaveShare) showText(text string, width, height, fontSize float64) error {
+func (w *WaveShare) showText(text string, fast bool, width, height, fontSize float64) error {
 	img, err := w.text2image(text, FONT_SPACE_MONO_BOLD, width, height, fontSize)
 	if err != nil {
 		log.Warn().Str("text", text).Err(err).Msg("failed to convert the text to image")
 		return err
 	}
 
-	return w.showImage(img, 8)
+	return w.showImage(img, fast, 8)
 }
 
 // Save the text as an image file.
