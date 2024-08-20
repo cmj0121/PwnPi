@@ -20,10 +20,12 @@ type Action int
 const (
 	IDLE Action = iota
 	SLEEP
+	CLOCK
 )
 
 const (
 	// Duration from idle to sleep mode
+	TO_IDLE_DURATION       = 180 * time.Second
 	IDLE_TO_SLEEP_DURATION = 10 * time.Second
 )
 
@@ -44,7 +46,7 @@ func (p *Pwn) Run(ctx context.Context) (err error) {
 	defer p.epilogue()
 
 	err = errors.Join(err, p.display.Initialize())
-	p.action = IDLE
+	p.action = CLOCK
 	p.activated = time.Now()
 
 	return p.run(ctx)
@@ -77,8 +79,18 @@ func (p *Pwn) handleAction() {
 			}
 		}
 
-		if err := p.display.ShowIdle(); err != nil {
+		if err := p.display.ShowText("PwnPi", true, 240, 120, 64); err != nil {
 			log.Warn().Err(err).Msg("failed to show the idle screen")
+		}
+	case CLOCK:
+		now := time.Now().Format("15:04")
+		if err := p.display.ShowText(now, true, 240, 120, 64); err != nil {
+			log.Warn().Err(err).Msg("failed to show the clock screen")
+		}
+
+		if p.action != SLEEP && p.activated.Add(TO_IDLE_DURATION).Before(time.Now()) {
+			log.Info().Msg("enter the idle mode")
+			p.action = IDLE
 		}
 	}
 }

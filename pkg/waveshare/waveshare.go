@@ -4,7 +4,6 @@ import (
 	"embed"
 	"errors"
 	"fmt"
-	"time"
 
 	"github.com/rs/zerolog/log"
 	"periph.io/x/host/v3"
@@ -132,9 +131,6 @@ func (w *WaveShare) Initialize() (err error) {
 
 	// initialize the display
 	err = errors.Join(err, w.showAssets(IMG_RPI_ICON, false, 8))
-	time.Sleep(333 * time.Millisecond)
-	err = errors.Join(err, w.ShowIdle())
-
 	err = errors.Join(err, w.DeepSleep())
 
 	log.Info().Err(err).Msg("successfully initialized the WaveShare E-Ink display")
@@ -150,7 +146,13 @@ func (w *WaveShare) DeepSleep() (err error) {
 	return
 }
 
-func (w *WaveShare) ShowIdle() (err error) {
-	err = errors.Join(err, w.showText("PwnPi", true, 240, 120, 64))
-	return
+// Show the text on the WaveShare E-Ink display.
+func (w *WaveShare) ShowText(text string, fast bool, width, height, fontSize float64) error {
+	img, err := w.text2image(text, FONT_SPACE_MONO_BOLD, width, height, fontSize)
+	if err != nil {
+		log.Warn().Str("text", text).Err(err).Msg("failed to convert the text to image")
+		return err
+	}
+
+	return w.showImage(img, fast, 8)
 }
