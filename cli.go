@@ -8,9 +8,9 @@ import (
 	"time"
 
 	"github.com/alecthomas/kong"
+	"github.com/cmj0121/pwnpi/pkg/pidfile"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
-	"github.com/cmj0121/pwnpi/pkg/pidfile"
 )
 
 const (
@@ -26,6 +26,7 @@ const (
 type PwnPi struct {
 	// general options
 	Version kong.VersionFlag `short:"V" name:"version" help:"Show version information and exit."`
+	Debug   bool             `short:"d" name:"debug" help:"Show the debug output."`
 
 	// logging options
 	Verbose int `short:"v" name:"verbose" type:"counter" help:"Show the verbose output."`
@@ -60,8 +61,18 @@ func (p *PwnPi) Run(cmd string) error {
 	p.prologue()
 	defer p.epilogue()
 
-	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
-	defer cancel()
+	var (
+		ctx    context.Context
+		cancel context.CancelFunc
+	)
+	switch p.Debug {
+	case true:
+		ctx, cancel = context.WithTimeout(context.Background(), 60*time.Second)
+		defer cancel()
+	default:
+		ctx, cancel = context.WithCancel(context.Background())
+		defer cancel()
+	}
 
 	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, os.Interrupt)

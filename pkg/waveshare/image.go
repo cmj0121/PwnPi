@@ -118,16 +118,6 @@ func (w *WaveShare) showImage(img image.Image, fast bool, padding int) error {
 	return w.showPixel(fast, pixels...)
 }
 
-func (w *WaveShare) showText(text string, fast bool, width, height, fontSize float64) error {
-	img, err := w.text2image(text, FONT_SPACE_MONO_BOLD, width, height, fontSize)
-	if err != nil {
-		log.Warn().Str("text", text).Err(err).Msg("failed to convert the text to image")
-		return err
-	}
-
-	return w.showImage(img, fast, 8)
-}
-
 // Save the text as an image file.
 func (w *WaveShare) text2image(text string, font string, width, height, fontSize float64) (image.Image, error) {
 	dc := gg.NewContext(int(width), int(height))
