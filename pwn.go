@@ -27,7 +27,7 @@ const (
 const (
 	// Duration from idle to sleep mode
 	TO_IDLE_DURATION       = 180 * time.Second
-	IDLE_TO_SLEEP_DURATION = 10 * time.Second
+	IDLE_TO_SLEEP_DURATION = 20 * time.Second
 )
 
 // The Pwn instance that control the PwnPi CLI and how it behaves.
