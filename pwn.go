@@ -6,6 +6,7 @@ import (
 	"embed"
 	"errors"
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/cmj0121/pwnpi/pkg/waveshare"
@@ -34,6 +35,8 @@ type Pwn struct {
 	// The flush interval of the display
 	Interval time.Duration `name:"interval" default:"10ms" help:"The flush interval of the display."`
 
+	mu sync.Mutex
+
 	// The waveshare E-Ink display instance
 	display   *waveshare.WaveShare
 	action    Action
@@ -54,6 +57,7 @@ func (p *Pwn) Run(ctx context.Context) (err error) {
 
 func (p *Pwn) run(ctx context.Context) error {
 	ticker := time.NewTicker(p.Interval)
+	touches := p.display.Touches(ctx)
 
 	for {
 		select {
@@ -62,6 +66,8 @@ func (p *Pwn) run(ctx context.Context) error {
 			return nil
 		case <-ticker.C:
 			p.handleAction()
+		case <-touches:
+			p.switchAction(CLOCK)
 		}
 	}
 }
@@ -73,7 +79,7 @@ func (p *Pwn) handleAction() {
 	case IDLE:
 		// only refresh the IDLE screen at first 5 seconds in IDLE mode
 		if time.Since(p.activated) > IDLE_TO_SLEEP_DURATION {
-			p.action = SLEEP
+			p.switchAction(SLEEP)
 			if err := p.display.DeepSleep(); err != nil {
 				log.Warn().Err(err).Msg("failed to enter the sleep mode")
 			}
@@ -90,8 +96,20 @@ func (p *Pwn) handleAction() {
 
 		if p.action != SLEEP && p.activated.Add(TO_IDLE_DURATION).Before(time.Now()) {
 			log.Info().Msg("enter the idle mode")
-			p.action = IDLE
+			p.switchAction(IDLE)
 		}
+	}
+}
+
+func (p *Pwn) switchAction(action Action) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	p.action = action
+	switch p.action {
+	case SLEEP, IDLE:
+	default:
+		p.activated = time.Now()
 	}
 }
 

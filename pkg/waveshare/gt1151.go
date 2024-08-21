@@ -139,7 +139,7 @@ func (i *I2C) Touches(ctx context.Context) <-chan MultiTouch {
 
 				switch event := i.handleTouch(); event {
 				case nil:
-					log.Debug().Msg("failed to handle the touch event")
+					log.Trace().Msg("failed to handle the touch event")
 				default:
 					ch <- *event
 				}
