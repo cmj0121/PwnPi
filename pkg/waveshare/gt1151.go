@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math"
 	"time"
 
 	"github.com/rs/zerolog/log"
@@ -41,12 +42,27 @@ func (t Touch) String() string {
 
 // The multi-point touch event
 type MultiTouch struct {
-	Count  int     // the number of touch points
-	Touchs []Touch // the touch points
+	Count     int       // the number of touch points
+	Touchs    []Touch   // the touch points
+	Timestamp time.Time // the timestamp of the touch event
 }
 
 func (m MultiTouch) String() string {
 	return fmt.Sprintf("%v", m.Touchs)
+}
+
+// calculate the moving distance of the touch event
+// return the (x, y) and the absolute ratio of the moving
+func (m MultiTouch) MoveTo(next *MultiTouch) (int, int, float64) {
+	if len(m.Touchs) == 0 || len(next.Touchs) == 0 {
+		return 0, 0, 0
+	}
+
+	x := next.Touchs[0].X - m.Touchs[0].X
+	y := next.Touchs[0].Y - m.Touchs[0].Y
+	r := math.Abs(float64(x) / float64(y))
+
+	return x, y, r
 }
 
 // The I2C controller for the GT1151.
@@ -190,5 +206,6 @@ func (i *I2C) handleTouch() *MultiTouch {
 		event.Touchs = append(event.Touchs, touch)
 	}
 
+	event.Timestamp = time.Now()
 	return event
 }

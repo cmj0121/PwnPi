@@ -82,15 +82,15 @@ func (p *Pwn) run(ctx context.Context) error {
 	ticker := time.NewTicker(p.Interval)
 	defer ticker.Stop()
 
-	touches := p.display.Touches(ctx)
+	userEvent := p.display.Event(ctx)
 
 	for {
 		select {
 		case <-ctx.Done():
 			log.Info().Msg("context is done, stop running the PwnPi CLI")
 			return nil
-		case event := <-touches:
-			log.Debug().Str("event", event.String()).Msg("touch event received")
+		case event := <-userEvent:
+			log.Info().Str("event", event.String()).Msg("user event received")
 			p.activated = time.Now()
 
 			switch p.action {
