@@ -6,7 +6,7 @@ After=systemd-modules-load.service
 [Service]
 Type=oneshot
 RemainAfterExit=yes
-ExecStart=/usr/local/bin/pwnpi -vv pwn
+ExecStart=/usr/local/bin/pwnpi -v pwn
 
 [Install]
 WantedBy=sysinit.target
