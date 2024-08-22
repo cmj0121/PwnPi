@@ -27,7 +27,7 @@ const (
 const (
 	// Duration from idle to sleep mode
 	TO_IDLE_DURATION       = 180 * time.Second
-	IDLE_TO_SLEEP_DURATION = 20 * time.Second
+	IDLE_TO_SLEEP_DURATION = 60 * time.Second
 )
 
 // The Pwn instance that control the PwnPi CLI and how it behaves.
@@ -41,6 +41,7 @@ type Pwn struct {
 	display   *waveshare.WaveShare
 	action    Action
 	activated time.Time
+	updating  bool
 }
 
 // Run the PwnPi CLI based on the current configuration
@@ -53,64 +54,6 @@ func (p *Pwn) Run(ctx context.Context) (err error) {
 	p.activated = time.Now()
 
 	return p.run(ctx)
-}
-
-func (p *Pwn) run(ctx context.Context) error {
-	ticker := time.NewTicker(p.Interval)
-	touches := p.display.Touches(ctx)
-
-	for {
-		select {
-		case <-ctx.Done():
-			log.Warn().Msg("context is done, stop running the PwnPi CLI")
-			return nil
-		case <-ticker.C:
-			p.handleAction()
-		case <-touches:
-			p.switchAction(CLOCK)
-		}
-	}
-}
-
-func (p *Pwn) handleAction() {
-	switch p.action {
-	case SLEEP:
-		// already in sleep mode, skip the sleep mode
-	case IDLE:
-		// only refresh the IDLE screen at first 5 seconds in IDLE mode
-		if time.Since(p.activated) > IDLE_TO_SLEEP_DURATION {
-			p.switchAction(SLEEP)
-			if err := p.display.DeepSleep(); err != nil {
-				log.Warn().Err(err).Msg("failed to enter the sleep mode")
-			}
-		}
-
-		if err := p.display.ShowText("PwnPi", true, 240, 120, 64); err != nil {
-			log.Warn().Err(err).Msg("failed to show the idle screen")
-		}
-	case CLOCK:
-		now := time.Now().Format("15:04")
-		if err := p.display.ShowText(now, true, 240, 120, 64); err != nil {
-			log.Warn().Err(err).Msg("failed to show the clock screen")
-		}
-
-		if p.action != SLEEP && p.activated.Add(TO_IDLE_DURATION).Before(time.Now()) {
-			log.Info().Msg("enter the idle mode")
-			p.switchAction(IDLE)
-		}
-	}
-}
-
-func (p *Pwn) switchAction(action Action) {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-
-	p.action = action
-	switch p.action {
-	case SLEEP, IDLE:
-	default:
-		p.activated = time.Now()
-	}
 }
 
 func (p *Pwn) prologue() error {
@@ -132,4 +75,79 @@ func (p *Pwn) epilogue() {
 
 	log.Info().Msg("PwnPi CLI is terminated")
 	fmt.Println("~ Bye ~")
+}
+
+// The incoming I/O handler that serve the touch event and update the display.
+func (p *Pwn) run(ctx context.Context) error {
+	ticker := time.NewTicker(p.Interval)
+	defer ticker.Stop()
+
+	touches := p.display.Touches(ctx)
+
+	for {
+		select {
+		case <-ctx.Done():
+			log.Info().Msg("context is done, stop running the PwnPi CLI")
+			return nil
+		case event := <-touches:
+			log.Debug().Str("event", event.String()).Msg("touch event received")
+			p.activated = time.Now()
+
+			switch p.action {
+			case SLEEP, IDLE:
+				log.Info().Msg("wake up the display")
+				p.action = CLOCK
+			}
+		case <-ticker.C:
+			// log.Trace().Msg("refresh the display ...")
+			if !p.updating {
+				// refresh the display in another goroutine, and it may be ignored
+				// if another updating is running.
+				go p.updateDisplay(p.action)
+			}
+		}
+	}
+}
+
+// Update the display by the given action.
+func (p *Pwn) updateDisplay(action Action) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	if p.updating {
+		log.Warn().Msg("still updating the display, skip the update")
+		return
+	}
+
+	p.updating = true
+	defer func() {
+		p.updating = false
+	}()
+
+	switch action {
+	case SLEEP:
+		// already in sleep mode, skip the sleep mode
+	case IDLE:
+		if time.Since(p.activated) > IDLE_TO_SLEEP_DURATION {
+			p.action = SLEEP
+			if err := p.display.DeepSleep(); err != nil {
+				log.Warn().Err(err).Msg("failed to enter the sleep mode")
+			}
+		}
+
+		if err := p.display.ShowText("PwnPi", true, 240, 120, 64); err != nil {
+			log.Warn().Err(err).Msg("failed to show the idle screen")
+		}
+	case CLOCK:
+		now := time.Now().Format("15:04")
+		if err := p.display.ShowText(now, true, 240, 120, 64); err != nil {
+			log.Warn().Err(err).Msg("failed to show the clock screen")
+		}
+
+		if p.action != SLEEP && p.activated.Add(TO_IDLE_DURATION).Before(time.Now()) {
+			log.Info().Msg("enter the idle mode")
+			p.action = IDLE
+		}
+
+	}
 }
