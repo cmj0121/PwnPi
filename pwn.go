@@ -27,7 +27,7 @@ const (
 const (
 	// Duration from idle to sleep mode
 	TO_IDLE_DURATION       = 180 * time.Second
-	IDLE_TO_SLEEP_DURATION = 60 * time.Second
+	IDLE_TO_SLEEP_DURATION = 10 * time.Second
 )
 
 // The Pwn instance that control the PwnPi CLI and how it behaves.
@@ -130,9 +130,19 @@ func (p *Pwn) updateDisplay(action Action) {
 	case IDLE:
 		if time.Since(p.activated) > IDLE_TO_SLEEP_DURATION {
 			p.action = SLEEP
+
+			for i := 0; i < 10; i++ {
+				if err := p.display.ShowText("Sleeping ...", true, 240, 120, 28); err != nil {
+					log.Warn().Err(err).Msg("failed to show the idle screen")
+				}
+				time.Sleep(100 * time.Millisecond)
+			}
+
 			if err := p.display.DeepSleep(); err != nil {
 				log.Warn().Err(err).Msg("failed to enter the sleep mode")
 			}
+
+			return
 		}
 
 		if err := p.display.ShowText("PwnPi", true, 240, 120, 64); err != nil {
